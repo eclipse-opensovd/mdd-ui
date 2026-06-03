@@ -1,0 +1,8 @@
+/Users/MOHALEX/dev/mdd-ui/target/debug/deps/embed_resource-4c30c7a092dd9ad7.d: /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/lib.rs /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/non_windows.rs
+
+/Users/MOHALEX/dev/mdd-ui/target/debug/deps/libembed_resource-4c30c7a092dd9ad7.rlib: /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/lib.rs /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/non_windows.rs
+
+/Users/MOHALEX/dev/mdd-ui/target/debug/deps/libembed_resource-4c30c7a092dd9ad7.rmeta: /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/lib.rs /Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/non_windows.rs
+
+/Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/lib.rs:
+/Users/MOHALEX/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/embed-resource-3.0.9/src/non_windows.rs:
