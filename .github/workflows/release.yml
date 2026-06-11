@@ -12,11 +12,12 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc.*'
 permissions:
   contents: write
 jobs:
   release:
-    uses: eclipse-opensovd/cicd-workflows/.github/workflows/tauri-release.yml@3343c1dcd333151086dbef5f7a698c649b205dca
+    uses: eclipse-opensovd/cicd-workflows/.github/workflows/tauri-release.yml@8815a69eba44f830247f2b4efde484676f6ac6fe
     with:
       app-name: "MDD UI"
       app-binary-name: "mdd-ui"
