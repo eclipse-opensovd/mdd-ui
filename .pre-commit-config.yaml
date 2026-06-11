@@ -50,7 +50,7 @@ repos:
       - id: conventional-pre-commit
         stages: [commit-msg]
   - repo: https://github.com/eclipse-opensovd/cicd-workflows
-    rev: aa19ea3f3c55d7f4c79065f33f06c0410eab0595
+    rev: 3343c1dcd333151086dbef5f7a698c649b205dca
     hooks:
       - id: reuse-annotate
       - id: no-unicode-check

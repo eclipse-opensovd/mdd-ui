@@ -36,4 +36,4 @@ jobs:
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
       - name: Run checks
-        uses: eclipse-opensovd/cicd-workflows/pre-commit-action@aa19ea3f3c55d7f4c79065f33f06c0410eab0595
+        uses: eclipse-opensovd/cicd-workflows/pre-commit-action@3343c1dcd333151086dbef5f7a698c649b205dca
