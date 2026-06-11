@@ -1124,7 +1124,7 @@ fn sort_service_section_by_id(nodes: &mut Vec<TreeNode>, list_type: ServiceListT
 fn extract_service_id(text: &str) -> Option<u32> {
     let hex_part = text.strip_prefix("0x")?;
     let dash_pos = hex_part.find(" - ")?;
-    u32::from_str_radix(hex_part[..dash_pos].trim(), 16).ok()
+    u32::from_str_radix(hex_part.get(..dash_pos)?.trim(), 16).ok()
 }
 
 #[tauri::command]

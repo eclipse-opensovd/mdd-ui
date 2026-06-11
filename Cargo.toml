@@ -24,6 +24,7 @@ indexing_slicing = { level = "deny" }
 unwrap_used = { level = "deny" }
 arithmetic_side_effects = { level = "deny" }
 separated_literal_suffix = { level = "deny" }
+string_slice = { level = "deny" }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(nightly)'] }
