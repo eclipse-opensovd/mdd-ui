@@ -17,7 +17,7 @@ permissions:
   contents: write
 jobs:
   release:
-    uses: eclipse-opensovd/cicd-workflows/.github/workflows/tauri-release.yml@9a5ea4c0c97d0d1d410162b9e68326d0b7af86f9
+    uses: eclipse-opensovd/cicd-workflows/.github/workflows/tauri-release.yml@8ef3ca2897f9e5c72b2b8c68e7a86dc1530835a1
     with:
       app-name: "MDD UI"
       app-binary-name: "mdd-ui"
