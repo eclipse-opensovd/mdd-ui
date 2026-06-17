@@ -470,7 +470,104 @@ fn build_variant_summary_section(vw: &VariantWrap<'_>, name: &str) -> Vec<Detail
         .with_type(DetailSectionType::Overview),
     );
 
+    sections.push(build_variant_patterns_section(vw));
+
     sections
+}
+
+/// Format an expected-value string as hex. The database stores values as decimal strings;
+/// this parses the value as `u64` and formats it as `0xNN` hex. Falls back to the raw
+/// string if parsing fails.
+fn format_expected_value_as_hex(raw: &str) -> String {
+    if let Ok(n) = raw.parse::<u64>() {
+        if n <= 0xFF {
+            format!("0x{n:02X}")
+        } else if n <= 0xFFFF {
+            format!("0x{n:04X}")
+        } else if n <= 0xFFFF_FFFF {
+            format!("0x{n:08X}")
+        } else {
+            format!("0x{n:016X}")
+        }
+    } else {
+        raw.to_owned()
+    }
+}
+
+/// Build a "Variant Patterns" detail section showing the identification patterns for this variant.
+/// Always returns a section; shows an empty table when no patterns are defined.
+fn build_variant_patterns_section(vw: &VariantWrap<'_>) -> DetailSectionData {
+    let header = DetailRow::header(vec![
+        DetailCell::text("Pattern #"),
+        DetailCell::text("Service"),
+        DetailCell::text("Parameter"),
+        DetailCell::text("Expected Value"),
+        DetailCell::text("Addressing"),
+    ]);
+
+    let mut rows: Vec<DetailRow> = Vec::new();
+
+    if let Some(patterns) = vw.variant_pattern() {
+        for (pi, pattern) in patterns.iter().enumerate() {
+            let Some(matching_params) = pattern.matching_parameter() else {
+                continue;
+            };
+
+            for mp in matching_params {
+                let service_name = mp
+                    .diag_service()
+                    .and_then(|ds| ds.diag_comm())
+                    .and_then(|dc| dc.short_name())
+                    .unwrap_or("-")
+                    .to_owned();
+
+                let param_name = mp
+                    .out_param()
+                    .and_then(|p| p.short_name())
+                    .unwrap_or("-")
+                    .to_owned();
+
+                let expected_value = mp
+                    .expected_value()
+                    .map_or_else(|| "-".to_owned(), format_expected_value_as_hex);
+
+                let addressing = match mp.use_physical_addressing() {
+                    Some(true) => "Physical",
+                    Some(false) => "Functional",
+                    None => "",
+                };
+
+                rows.push(DetailRow::normal(
+                    vec![
+                        DetailCell::text(format!("{}", pi.saturating_add(1))),
+                        DetailCell::new(service_name, CellType::ParameterName),
+                        DetailCell::text(param_name),
+                        DetailCell::text(expected_value),
+                        DetailCell::text(addressing),
+                    ],
+                    0,
+                ));
+            }
+        }
+    }
+
+    DetailSectionData::new(
+        "Variant Patterns".to_owned(),
+        DetailContent::Table {
+            header,
+            rows,
+            constraints: vec![
+                ColumnConstraint::Percentage(10),
+                ColumnConstraint::Percentage(35),
+                ColumnConstraint::Percentage(25),
+                ColumnConstraint::Percentage(20),
+                ColumnConstraint::Percentage(10),
+            ],
+            use_row_selection: false,
+        },
+        false,
+    )
+    .with_type(DetailSectionType::Custom)
 }
 
 /// Build summary section for a `DiagLayer` (used by functional groups and ECU shared data)
