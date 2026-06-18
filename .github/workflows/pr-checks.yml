@@ -27,7 +27,7 @@ jobs:
         with:
           submodules: false
       - name: Format and Clippy - Nightly toolchain pinned
-        uses: eclipse-opensovd/cicd-workflows/rust-lint-and-format-action@3343c1dcd333151086dbef5f7a698c649b205dca
+        uses: eclipse-opensovd/cicd-workflows/rust-lint-and-format-action@07140bdd84f20b66fd4aff58a83c5148deec388c
         with:
           toolchain: nightly-2025-07-14
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -35,7 +35,7 @@ jobs:
           fail-on-clippy-error: "true"
           clippy-deny-warnings: "true"
       - name: Format and Clippy - Nightly toolchain latest
-        uses: eclipse-opensovd/cicd-workflows/rust-lint-and-format-action@3343c1dcd333151086dbef5f7a698c649b205dca
+        uses: eclipse-opensovd/cicd-workflows/rust-lint-and-format-action@07140bdd84f20b66fd4aff58a83c5148deec388c
         with:
           toolchain: nightly
           github-token: ${{ secrets.GITHUB_TOKEN }}
