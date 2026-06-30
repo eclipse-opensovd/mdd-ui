@@ -26,11 +26,6 @@ feature-depth = 1
 # https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
 ignore = [
-  # rand 0.7.3 is a build-time-only dep via tauri's internal kuchikiki fork ->
-  # phf_codegen 0.8.0 -> phf_generator 0.8.0. No fix exists in the 0.7.x series
-  # and the advisory conditions (custom logger calling rand::rng() during reseed)
-  # cannot be triggered inside a build script.
-  { id = "RUSTSEC-2026-0097", reason = "build-time only via tauri/phf_codegen 0.8; advisory conditions are unreachable in a build-script context" },
   # GTK3 crates are unmaintained (archived by gtk-rs) but remain transitive
   # dependencies through Tauri/wry on Linux with no upstream fix available yet.
   "RUSTSEC-2024-0411", # gtk3 bindings: no longer maintained
@@ -47,8 +42,6 @@ ignore = [
   "RUSTSEC-2024-0429", # glib
   # proc-macro-error unmaintained - via glib-macros/gtk3-macros
   "RUSTSEC-2024-0370",
-  # fxhash unmaintained - transitive via Tauri
-  "RUSTSEC-2025-0057",
   # unic-* crates are unmaintained - transitive via tauri-utils -> urlpattern 0.3.0
   # urlpattern 0.6.0 fixes this but is outside tauri-utils' ^0.3.0 constraint
   "RUSTSEC-2025-0075", # unic-char-range
@@ -108,7 +101,10 @@ skip-tree = []
 unknown-registry = "warn"
 unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = ["https://github.com/eclipse-opensovd/classic-diagnostic-adapter"]
+allow-git = [
+  "https://github.com/eclipse-opensovd/classic-diagnostic-adapter",
+  "https://github.com/alexmohr/flatbuffers",
+]
 
 [sources.allow-org]
 github = []

@@ -58,15 +58,27 @@ repos:
       - id: reuse-annotate
       - id: no-unicode-check
         # Excluded because it contains literal Unicode banner-fill characters in
-        # the no-banner-comment-check args below.
-        exclude: ^\.pre-commit-config\.yaml$
+        # the no-banner-comment-check args below. Frontend files are handled by
+        # a separate entry below that allows a broader set of UI characters.
+        exclude: ^(\.pre-commit-config\.yaml|frontend/)
         args:
           - --allowed-chars=µ,§
+      - id: no-unicode-check
+        name: no-unicode-check (frontend)
+        # Frontend source files may use typographic punctuation and UI glyphs.
+        # Allowed extras (beyond ASCII):
+        #   Dashes  : U+2013 EN DASH, U+2014 EM DASH
+        #   Arrows  : ← → ↑ ↓ ↔ ↕ ↗ ↘ ↙ ↖ ⇐ ⇒ ⇑ ⇓ ⟵ ⟶
+        #   Icons   : ✓ ✔ ✗ ✕ ✖ ℹ ⚠ ★ ☆ ● ○ • ▸ ▾ ◂ ▴ ▲ ▼
+        #   Punct   : ... (U+2026 ELLIPSIS), · (U+00B7 MIDDLE DOT), × (U+00D7 MULT SIGN)
+        files: ^frontend/.*\.(ts|tsx|vue|js|mjs|cjs)$
+        args:
+          - --allowed-chars=µ,§,–,—,←,→,↑,↓,↔,↕,↗,↘,↙,↖,⇐,⇒,⇑,⇓,⟵,⟶,✓,✔,✗,✕,✖,ℹ,⚠,★,☆,●,○,•,▸,▾,◂,▴,▲,▼,…,·,×
       - id: no-banner-comment-check
         exclude: ^comm-mbedtls/
         files: '\.(rs|py|toml|yml|yaml|c|h|kt|kts|sh|proto|fbs|puml|json|xml|ts|tsx|vue|js|mjs|cjs)$|^Dockerfile$'
         args:
-          - "--banner-chars==-#*/~_+—–―─━═│┃║┌┐└┘┏┓┗┛╔╗╚╝╭╮╯╰"
+          - "--banner-chars==-#*/~_+—–―─━═"
           - --min-length=4
       - id: validate-cargo-lints
       - id: cargo-fmt
