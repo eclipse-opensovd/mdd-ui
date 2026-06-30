@@ -220,9 +220,7 @@ export async function getInitialFile(): Promise<string | null> {
   return invoke<string | null>("get_initial_file");
 }
 
-// ---------------------------------------------------------------------------
 // Tab management
-// ---------------------------------------------------------------------------
 
 export async function switchTab(tabId: string): Promise<LoadResult> {
   return invoke<LoadResult>("switch_tab", { tabId });
@@ -236,9 +234,7 @@ export async function getOpenTabs(): Promise<TabInfo[]> {
   return invoke<TabInfo[]>("get_open_tabs");
 }
 
-// ---------------------------------------------------------------------------
 // UDS translation
-// ---------------------------------------------------------------------------
 
 export interface MatchedService {
   name: string;
