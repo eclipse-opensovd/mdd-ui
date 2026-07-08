@@ -28,10 +28,12 @@ use mdd_core::{
 };
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
+use ts_rs::TS;
 
 // Lightweight DTOs sent to the Vue frontend
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct VisibleNode {
     pub index: usize,
     pub depth: usize,
@@ -44,7 +46,8 @@ pub struct VisibleNode {
     pub old_text: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct LoadResult {
     pub tab_id: String,
     pub ecu_name: String,
@@ -53,32 +56,37 @@ pub struct LoadResult {
     pub is_diff: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct SearchResult {
     pub visible: Vec<VisibleNode>,
     pub match_count: usize,
     pub scope: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct NavigateResult {
     pub visible: Vec<VisibleNode>,
     pub target_index: usize,
     pub detail: Vec<DetailSectionData>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct ToggleSortResult {
     pub nodes: Vec<VisibleNode>,
     pub sort_label: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TS)]
+#[ts(export)]
 pub struct JumpTarget {
     pub target_type: JumpTargetType,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TS)]
+#[ts(export)]
 pub enum JumpTargetType {
     Parameter { param_id: u32 },
     Dop { index: usize, name: String },
@@ -193,7 +201,8 @@ pub struct TabEntry {
     pub is_diff: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct TabInfo {
     pub id: String,
     pub display_name: String,
@@ -1419,13 +1428,15 @@ pub fn get_open_tabs(state: State<'_, AppState>) -> Result<Vec<TabInfo>, String>
 
 // Recent files management
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 pub struct RecentFile {
     pub path: String,
     pub timestamp: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct RecentFilesResult {
     pub files: Vec<RecentFile>,
 }
@@ -1548,8 +1559,9 @@ pub fn remove_recent_file(path: String, app: AppHandle) -> Result<(), String> {
 
 // UI preferences (font size, etc.)
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, TS)]
 #[allow(clippy::struct_excessive_bools)]
+#[ts(export)]
 pub struct UiPrefs {
     pub font_size: u8,
     #[serde(default = "default_theme")]
