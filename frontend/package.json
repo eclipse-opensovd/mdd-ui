@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
+    "generate-types": "cd .. && TS_RS_LARGE_INT=number TS_RS_EXPORT_DIR=frontend/src/api/generated cargo gen-types",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,vue,css,html}\"",

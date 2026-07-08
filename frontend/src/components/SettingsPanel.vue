@@ -76,8 +76,8 @@ async function saveAiSettings() {
     llm_endpoint: endpoint,
     llm_model: aiForm.llm_model,
     auth_method: aiForm.auth_method,
-    api_token: aiForm.api_token || undefined,
-    api_version: aiForm.api_version || undefined,
+    api_token: aiForm.api_token || null,
+    api_version: aiForm.api_version || null,
   });
 }
 

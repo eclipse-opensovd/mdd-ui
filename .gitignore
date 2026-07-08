@@ -23,6 +23,11 @@ __pycache__/
 # Generated (Tauri)
 gen
 
+# ts-rs default export directories (when TS_RS_EXPORT_DIR is unset)
+bindings
+src/mdd-core/bindings
+src/mdd-core/frontend
+
 # Frontend (Tauri + Vue)
 node_modules
 dist

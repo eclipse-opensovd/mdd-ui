@@ -179,6 +179,8 @@ impl MddMcpServer {
 
 // Tool implementations
 
+// `tool_router` generates async trait methods around these synchronous tools.
+#[allow(unknown_lints, clippy::unused_async_trait_impl)]
 #[tool_router(server_handler)]
 impl MddMcpServer {
     /// Load an MDD diagnostic database file and return a summary of its contents.
