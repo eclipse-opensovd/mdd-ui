@@ -14,7 +14,6 @@
 //!
 //! Exposes tools over stdio that allow LLMs to load MDD files, browse the tree
 //! structure, search nodes, view details, and compare two databases.
-
 use std::{collections::HashMap, fmt::Write as _, sync::Mutex, time::SystemTime};
 
 use anyhow::{Context, Result};
@@ -31,6 +30,15 @@ struct CachedDatabase {
     nodes: Vec<TreeNode>,
     ecu_name: String,
     mtime: SystemTime,
+}
+
+async fn run_tool_blocking<F>(operation: F) -> String
+where
+    F: FnOnce() -> String + Send + 'static,
+{
+    tokio::task::spawn_blocking(operation)
+        .await
+        .unwrap_or_else(|error| format!("Error: MCP tool task failed: {error}"))
 }
 
 fn get_mtime(path: &str) -> std::result::Result<SystemTime, String> {
@@ -189,7 +197,12 @@ impl MddMcpServer {
         description = "Load an MDD diagnostic database file and return a summary. Must be called \
                        before browse_tree, get_node_details, or search_nodes."
     )]
-    fn load_mdd(&self, Parameters(params): Parameters<LoadMddParams>) -> String {
+    async fn load_mdd(&self, Parameters(params): Parameters<LoadMddParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.load_mdd_sync(Parameters(params))).await
+    }
+
+    fn load_mdd_sync(&self, Parameters(params): Parameters<LoadMddParams>) -> String {
         if let Err(e) = self.ensure_loaded(&params.path) {
             return format!("Error: {e}");
         }
@@ -214,7 +227,12 @@ impl MddMcpServer {
         description = "Unload an MDD database from the cache. Use this to free memory or force a \
                        fresh reload on the next load_mdd call."
     )]
-    fn unload_mdd(&self, Parameters(params): Parameters<UnloadMddParams>) -> String {
+    async fn unload_mdd(&self, Parameters(params): Parameters<UnloadMddParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.unload_mdd_sync(Parameters(params))).await
+    }
+
+    fn unload_mdd_sync(&self, Parameters(params): Parameters<UnloadMddParams>) -> String {
         let mut cache = match self.databases.lock() {
             Ok(c) => c,
             Err(e) => return format!("Error: Lock poisoned: {e}"),
@@ -232,7 +250,12 @@ impl MddMcpServer {
         description = "Browse the tree hierarchy of a loaded MDD database. Returns indented node \
                        list with indices that can be used with get_node_details."
     )]
-    fn browse_tree(&self, Parameters(params): Parameters<BrowseTreeParams>) -> String {
+    async fn browse_tree(&self, Parameters(params): Parameters<BrowseTreeParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.browse_tree_sync(Parameters(params))).await
+    }
+
+    fn browse_tree_sync(&self, Parameters(params): Parameters<BrowseTreeParams>) -> String {
         if let Err(e) = self.ensure_loaded(&params.path) {
             return format!("Error: {e}");
         }
@@ -285,7 +308,18 @@ impl MddMcpServer {
                        formatted detail sections including overview tables, parameters, and \
                        related data."
     )]
-    fn get_node_details(&self, Parameters(params): Parameters<GetNodeDetailsParams>) -> String {
+    async fn get_node_details(
+        &self,
+        Parameters(params): Parameters<GetNodeDetailsParams>,
+    ) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.get_node_details_sync(Parameters(params))).await
+    }
+
+    fn get_node_details_sync(
+        &self,
+        Parameters(params): Parameters<GetNodeDetailsParams>,
+    ) -> String {
         if let Err(e) = self.ensure_loaded(&params.path) {
             return format!("Error: {e}");
         }
@@ -334,7 +368,12 @@ impl MddMcpServer {
         description = "Search tree nodes by text (case-insensitive). Returns matching nodes with \
                        indices that can be used with get_node_details or browse_tree start_index."
     )]
-    fn search_nodes(&self, Parameters(params): Parameters<SearchNodesParams>) -> String {
+    async fn search_nodes(&self, Parameters(params): Parameters<SearchNodesParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.search_nodes_sync(Parameters(params))).await
+    }
+
+    fn search_nodes_sync(&self, Parameters(params): Parameters<SearchNodesParams>) -> String {
         if let Err(e) = self.ensure_loaded(&params.path) {
             return format!("Error: {e}");
         }
@@ -365,12 +404,17 @@ impl MddMcpServer {
 
     /// Compare two MDD databases and return a diff tree showing additions,
     /// removals, and modifications.
-    #[allow(clippy::unused_self)]
     #[tool(
         description = "Compare two MDD databases and return a diff tree with change annotations \
                        (+added, -removed, ~modified)."
     )]
-    fn diff_mdd(&self, Parameters(params): Parameters<DiffMddParams>) -> String {
+    async fn diff_mdd(&self, Parameters(params): Parameters<DiffMddParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.diff_mdd_sync(Parameters(params))).await
+    }
+
+    #[allow(clippy::unused_self)]
+    fn diff_mdd_sync(&self, Parameters(params): Parameters<DiffMddParams>) -> String {
         let db_old = match database::load_mdd(&params.old_path) {
             Ok(db) => db,
             Err(e) => return format!("Error loading {}: {e:#}", params.old_path),
@@ -406,12 +450,17 @@ impl MddMcpServer {
     }
 
     /// Export a full text diff report comparing two MDD databases.
-    #[allow(clippy::unused_self)]
     #[tool(
         description = "Export a detailed text diff report between two MDD databases, showing all \
                        property changes across variants, services, parameters, etc."
     )]
-    fn export_diff(&self, Parameters(params): Parameters<ExportDiffParams>) -> String {
+    async fn export_diff(&self, Parameters(params): Parameters<ExportDiffParams>) -> String {
+        let server = self.clone();
+        run_tool_blocking(move || server.export_diff_sync(Parameters(params))).await
+    }
+
+    #[allow(clippy::unused_self)]
+    fn export_diff_sync(&self, Parameters(params): Parameters<ExportDiffParams>) -> String {
         let db_old = match database::load_mdd(&params.old_path) {
             Ok(db) => db,
             Err(e) => return format!("Error loading {}: {e:#}", params.old_path),
