@@ -131,7 +131,7 @@ export const useLlmStore = defineStore("llm", () => {
   }
 
   // VS Code Copilot extension's GitHub App Client ID.
-  // Pre-approved on every GHE instance with Copilot enabled — no admin approval needed.
+  // Pre-approved on every GHE instance with Copilot enabled - no admin approval needed.
   const COPILOT_CLIENT_ID = "Iv1.b507a08c87ecfe98";
 
   async function startCopilotLogin(gheHost: string): Promise<void> {

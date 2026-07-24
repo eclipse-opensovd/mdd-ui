@@ -33,8 +33,6 @@ const props = withDefaults(
   { title: "Byte Pattern", onNavigate: undefined, editedHex: undefined },
 );
 
-// ── Parse helpers ──────────────────────────────────────────────────────────
-
 interface Field {
   byteStart: number;
   byteEnd: number; // inclusive
@@ -144,10 +142,9 @@ function fieldColor(f: Field): string {
   return PALETTE[paletteMap.value.get(f.name) ?? 0];
 }
 
-// ── Grid cell model ────────────────────────────────────────────────────────
 // rows[byteLabel][colIndex 0-7], where col 0 = bit 7, col 7 = bit 0.
 // null = consumed by a previous colspan. Multi-byte fields are collapsed
-// into a single row labelled "start–end" to avoid repetitive empty rows.
+// into a single row labelled "start-end" to avoid repetitive empty rows.
 
 type GridCell =
   | { type: "empty" }
@@ -203,14 +200,12 @@ const grid = computed<GridRow[]>(() => {
   return result;
 });
 
-// ── Selection ─────────────────────────────────────────────────────────────
 const selected = ref<Field | null>(null);
 
 function select(f: Field) {
   selected.value = selected.value?.name === f.name ? null : f;
 }
 
-// ── Hover cross-highlight ─────────────────────────────────────────────────
 const hovered = ref<Field | null>(null);
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -243,7 +238,6 @@ function cellHighlighted(f: Field): boolean {
   return hovered.value.name === f.name;
 }
 
-// ── Tooltip ───────────────────────────────────────────────────────────────
 const tooltipVisible = ref(false);
 const tooltipX = ref(0);
 const tooltipY = ref(0);
@@ -254,7 +248,6 @@ function onCellMouseMove(event: MouseEvent) {
   tooltipY.value = event.clientY - 40;
 }
 
-// ── Collapse for large messages ───────────────────────────────────────────
 const COLLAPSE_THRESHOLD = 8;
 const expanded = ref(false);
 
@@ -272,7 +265,6 @@ const visibleGrid = computed(() => {
 
 const isCollapsible = computed(() => grid.value.length > COLLAPSE_THRESHOLD);
 
-// ── Keyboard navigation ───────────────────────────────────────────────────
 // Sorted field list for navigation: by byteStart asc, then bitHi desc
 const sortedFields = computed(() =>
   [...fields.value].sort((a, b) => {
@@ -322,7 +314,6 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-// ── Copy to clipboard ─────────────────────────────────────────────────────
 const copiedField = ref<string | null>(null);
 
 async function copyValue(value: string, label: string) {

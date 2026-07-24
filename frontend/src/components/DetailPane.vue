@@ -51,7 +51,6 @@ const udsServiceName = computed<string | null>(() => {
 
 const isRequestSection = computed(() => activeSection.value?.section_type === "Requests");
 
-// ── Variant resolution for UDS operations ───────────────────────
 // Walk the tree parent chain to find which variant the selected node belongs
 // to, so the UDS translator uses the correct variant (not always "base").
 const nodeVariant = ref<string | null>(null);
@@ -64,13 +63,12 @@ watch(
     try {
       nodeVariant.value = await getNodeVariant(idx);
     } catch {
-      // non-fatal — falls back to whatever variant is currently active
+      // non-fatal - falls back to whatever variant is currently active
     }
   },
   { immediate: true },
 );
 
-// ── Const types that are read-only ──────────────────────────────
 const CONST_TYPES = new Set([
   "CodedConst",
   "NrcConst",
@@ -79,7 +77,6 @@ const CONST_TYPES = new Set([
   "MatchingRequestParam",
 ]);
 
-// ── Parse byte_pattern_rows for UDS hex assembly ────────────────
 interface UdsParam {
   name: string;
   byteOffset: string;
@@ -146,7 +143,6 @@ watch(
   { immediate: true },
 );
 
-// ── Map param name → const/editable for table row identification ─
 const nonConstParamNames = computed<Set<string>>(() => {
   const s = new Set<string>();
   for (const p of udsParams.value) {
@@ -164,7 +160,6 @@ function isRowEditable(row: DetailRow): boolean {
   return nonConstParamNames.value.has(rowParamName(row));
 }
 
-// ── Value helpers for editable params ────────────────────────────
 function bitLengthForParam(name: string): number {
   return udsParams.value.find((u) => u.name === name)?.bitLength ?? 8;
 }
@@ -197,7 +192,6 @@ function normalizeValue(name: string) {
   editableValues.value[name] = String(Math.min(num, max));
 }
 
-// ── Edited hex map for the byte grid tooltip/display ─────────────
 const editedHexMap = computed<Record<string, string>>(() => {
   const m: Record<string, string> = {};
   for (const p of udsParams.value) {
@@ -215,7 +209,6 @@ const editedHexMap = computed<Record<string, string>>(() => {
   return m;
 });
 
-// ── UDS hex from const byte-pattern + user-entered values ───────
 const constOnlyHex = computed(() => {
   if (udsParams.value.length === 0) return "";
   const byteMap = new Map<number, string>();
@@ -244,7 +237,6 @@ const constOnlyHex = computed(() => {
   return Array.from({ length: maxByte + 1 }, (_, i) => byteMap.get(i) ?? "??").join(" ");
 });
 
-// ── CDA-based UDS payload generation ────────────────────────────
 let cdaTimer: ReturnType<typeof setTimeout> | null = null;
 const cdaError = ref<string | null>(null);
 
@@ -334,7 +326,7 @@ interface Badge {
 }
 
 const CELL_BADGES: Record<string, Badge> = {
-  // DOP variant types (pink – matches tree DOP badges)
+  // DOP variant types (pink - matches tree DOP badges)
   DOP: { label: "DOP", bg: "bg-pink-500/20", fg: "text-pink-300" },
   DTC: { label: "DTC", bg: "bg-red-500/20", fg: "text-red-300" },
   Struct: { label: "STRC", bg: "bg-fuchsia-500/20", fg: "text-fuchsia-300" },
@@ -344,7 +336,7 @@ const CELL_BADGES: Record<string, Badge> = {
   Mux: { label: "MUX", bg: "bg-orange-500/20", fg: "text-orange-300" },
   EnvData: { label: "ENV", bg: "bg-teal-500/20", fg: "text-teal-300" },
   EnvDesc: { label: "EDD", bg: "bg-sky-500/20", fg: "text-sky-300" },
-  // ComParam classes (sky – matches tree CP child badges)
+  // ComParam classes (sky - matches tree CP child badges)
   TIMING: { label: "TMG", bg: "bg-sky-500/20", fg: "text-sky-300" },
   BUSCOM: { label: "BUS", bg: "bg-orange-500/20", fg: "text-orange-300" },
   TPCOM: { label: "TPC", bg: "bg-teal-500/20", fg: "text-teal-300" },

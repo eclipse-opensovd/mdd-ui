@@ -16,6 +16,10 @@ todo*
 .claude
 .vscode
 
+# Python
+__pycache__/
+*.pyc
+
 # Generated (Tauri)
 gen
 

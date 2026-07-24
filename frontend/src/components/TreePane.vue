@@ -203,7 +203,7 @@ function nodeBadges(node: VisibleNode): Badge[] {
 
   if (badges.length > 0) return badges;
 
-  // Embedded prefix badge: "[CLASS] name" patterns (ComParam classes, Audience, …)
+  // Embedded prefix badge: "[CLASS] name" patterns (ComParam classes, Audience, ...)
   const tb = textPrefixBadge(node);
   if (tb) return [tb];
 
