@@ -11,3 +11,4 @@
 [alias]
 format = "fmt -- --check --config error_on_unformatted=true,error_on_line_overflow=true,format_strings=true,group_imports=StdExternalCrate,imports_granularity=Crate"
 lint = "clippy --all-targets --all-features -- -D warnings"
+gen-types = "test --workspace -- export_bindings"

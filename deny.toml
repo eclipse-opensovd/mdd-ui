@@ -103,7 +103,7 @@ unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = [
   "https://github.com/eclipse-opensovd/classic-diagnostic-adapter",
-  "https://github.com/alexmohr/flatbuffers",
+  "https://github.com/alexmohr/flatbuffers.git",
 ]
 
 [sources.allow-org]

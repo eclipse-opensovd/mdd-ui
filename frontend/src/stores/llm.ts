@@ -11,29 +11,16 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import type {
+  ChatMessage,
+  ChatResult,
+  DeviceFlowStart,
+  PollResult,
+  SettingsView as LlmSettingsView,
+  SettingsUpdate as LlmSettingsUpdate,
+} from "../api/generated/index";
 
-export interface LlmSettingsView {
-  ghe_host: string;
-  llm_endpoint: string;
-  llm_model: string;
-  auth_method: string;
-  has_token: boolean;
-  api_version?: string;
-}
-
-export interface LlmSettingsUpdate {
-  ghe_host: string;
-  llm_endpoint: string;
-  llm_model: string;
-  auth_method: string;
-  api_token?: string;
-  api_version?: string;
-}
-
-export interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
+export type { LlmSettingsView, LlmSettingsUpdate, ChatMessage };
 
 export type LoginState = "idle" | "polling" | "authorized" | "error";
 
@@ -52,6 +39,7 @@ export const useLlmStore = defineStore("llm", () => {
     llm_model: "gpt-4o",
     auth_method: "copilot",
     has_token: false,
+    api_version: null,
   });
   const messages = ref<ChatMessage[]>([]);
   const loginState = ref<LoginState>("idle");
@@ -149,13 +137,7 @@ export const useLlmStore = defineStore("llm", () => {
     error.value = "";
     currentAuthHost = authHost;
     try {
-      const result = await invoke<{
-        device_code: string;
-        user_code: string;
-        verification_uri: string;
-        expires_in: number;
-        interval: number;
-      }>("start_ghe_device_flow", {
+      const result = await invoke<DeviceFlowStart>("start_ghe_device_flow", {
         gheHost: authHost,
         clientId,
       });
@@ -179,7 +161,7 @@ export const useLlmStore = defineStore("llm", () => {
   async function doPoll(intervalMs: number): Promise<void> {
     if (!deviceFlowInfo.value) return;
     try {
-      const result = await invoke<{ status: string }>("poll_ghe_device_flow", {
+      const result = await invoke<PollResult>("poll_ghe_device_flow", {
         gheHost: currentAuthHost,
         clientId: COPILOT_CLIENT_ID,
         deviceCode: deviceFlowInfo.value.device_code,
@@ -209,7 +191,7 @@ export const useLlmStore = defineStore("llm", () => {
     isLoading.value = true;
     error.value = "";
     try {
-      const result = await invoke<{ content: string }>("llm_chat", {
+      const result = await invoke<ChatResult>("llm_chat", {
         messages: messages.value.map((m) => ({
           role: m.role,
           content: m.content,
