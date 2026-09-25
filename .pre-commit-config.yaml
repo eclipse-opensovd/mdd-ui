@@ -8,7 +8,7 @@
 # terms of the Apache License Version 2.0 which is available at
 # https://www.apache.org/licenses/LICENSE-2.0
 
-exclude: ^cda-database/src/(flatbuf/diagnostic_description|proto/fileformat)\.rs$
+exclude: ^(cda-database/src/(flatbuf/diagnostic_description|proto/fileformat)\.rs|frontend/src/api/generated/)$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -56,6 +56,9 @@ repos:
     rev: 07140bdd84f20b66fd4aff58a83c5148deec388c
     hooks:
       - id: reuse-annotate
+        args:
+          - '--ignore-paths'
+          - 'frontend/src/api/generated/*.ts'
       - id: no-unicode-check
         # Excluded because it contains literal Unicode banner-fill characters in
         # the no-banner-comment-check args below. Frontend files are handled by
