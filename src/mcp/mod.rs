@@ -21,7 +21,9 @@ use mdd_core::{
     database, diff,
     tree::{self, DetailContent, DetailRow, DetailRowType, DiffStatus, NodeType, TreeNode},
 };
-use rmcp::{handler::server::wrapper::Parameters, schemars, tool, tool_router};
+use rmcp::{
+    ServerHandler, handler::server::wrapper::Parameters, schemars, tool, tool_handler, tool_router,
+};
 use serde::Deserialize;
 
 // Cached data: we load the MDD, build the tree, and store only Send-safe data.
@@ -187,9 +189,7 @@ impl MddMcpServer {
 
 // Tool implementations
 
-// `tool_router` generates async trait methods around these synchronous tools.
-#[allow(unknown_lints, clippy::unused_async_trait_impl)]
-#[tool_router(server_handler)]
+#[tool_router]
 impl MddMcpServer {
     /// Load an MDD diagnostic database file and return a summary of its contents.
     /// This must be called before using `browse_tree`, `get_node_details`, or `search_nodes`.
@@ -488,6 +488,11 @@ impl MddMcpServer {
         String::from_utf8_lossy(&buf).into_owned()
     }
 }
+
+// `tool_handler` generates async trait methods that complete without awaiting.
+#[allow(unknown_lints, clippy::unused_async_trait_impl)]
+#[tool_handler]
+impl ServerHandler for MddMcpServer {}
 
 // Helpers
 
