@@ -10,102 +10,71 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-export interface VisibleNode {
-  index: number;
-  depth: number;
-  text: string;
-  expanded: boolean;
-  has_children: boolean;
-  node_type: string;
-  diff_status: string | null;
-  is_sortable: boolean;
-  old_text: string | null;
-}
+// Auto-generated types from Rust - do not edit manually
+import type {
+  CellJumpTarget,
+  CellJumpTargetType,
+  ChatMessage,
+  ChatResult,
+  DetailCell,
+  DetailContent,
+  DetailRow,
+  DetailSectionData,
+  DeviceFlowStart,
+  JumpTarget,
+  JumpTargetType,
+  LoadResult,
+  MatchedService,
+  NavigateResult,
+  PollResult,
+  RecentFile,
+  RecentFilesResult,
+  SearchResult,
+  ServiceSchemaResult,
+  SettingsUpdate,
+  SettingsView,
+  TabInfo,
+  ToggleSortResult,
+  UdsEncodeResult,
+  UdsLookupResult,
+  UiPrefs,
+  VariantInfo,
+  VisibleNode,
+} from "./generated/index";
 
-export interface LoadResult {
-  tab_id: string;
-  ecu_name: string;
-  node_count: number;
-  visible: VisibleNode[];
-  is_diff: boolean;
-}
+export type {
+  CellJumpTarget,
+  CellJumpTargetType,
+  ChatMessage,
+  ChatResult,
+  DetailCell,
+  DetailContent,
+  DetailRow,
+  DetailSectionData,
+  DeviceFlowStart,
+  JumpTarget,
+  JumpTargetType,
+  LoadResult,
+  MatchedService,
+  NavigateResult,
+  PollResult,
+  RecentFile,
+  RecentFilesResult,
+  SearchResult,
+  ServiceSchemaResult,
+  SettingsUpdate,
+  SettingsView,
+  TabInfo,
+  ToggleSortResult,
+  UdsEncodeResult,
+  UdsLookupResult,
+  UiPrefs,
+  VariantInfo,
+  VisibleNode,
+};
 
-export interface TabInfo {
-  id: string;
-  display_name: string;
-  file_path: string;
-  is_diff: boolean;
-  is_active: boolean;
-}
-
-export interface SearchResult {
-  visible: VisibleNode[];
-  match_count: number;
-  scope: string;
-}
-
-export interface DetailSection {
-  title: string;
-  content: DetailContent;
-  render_as_header: boolean;
-  section_type: string;
-  byte_pattern_rows?: DetailRow[] | null;
-}
-
-export type DetailContent =
-  | { PlainText: string[] }
-  | {
-      Table: {
-        header: DetailRow;
-        rows: DetailRow[];
-        constraints: unknown[];
-        use_row_selection: boolean;
-      };
-    }
-  | { Composite: DetailSection[] };
-
-export interface DetailRow {
-  cells: DetailCell[];
-  indent: number;
-  row_type: string;
-  metadata: unknown | null;
-  diff_status: string | null;
-}
-
-export interface DetailCell {
-  text: string;
-  cell_type: string;
-  jump_target: JumpTarget | null;
-}
-
-export interface JumpTarget {
-  target_type: JumpTargetType;
-}
-
-export type JumpTargetType =
-  | { Parameter: { param_id: number } }
-  | { Dop: { index: number; name: string } }
-  | { TreeNodeByIndex: { index: number; short_name: string } };
-
-export interface NavigateResult {
-  visible: VisibleNode[];
-  target_index: number;
-  detail: DetailSection[];
-}
-
-export interface ToggleSortResult {
-  nodes: VisibleNode[];
-  sort_label: string;
-}
-
-export interface RecentFile {
-  path: string;
-  timestamp: number;
-}
-
-export interface RecentFilesResult {
-  files: RecentFile[];
-}
+/** @deprecated Use `DetailSectionData` instead. */
+export type DetailSection = DetailSectionData;
 
 export async function loadMdd(path: string): Promise<LoadResult> {
   return invoke<LoadResult>("load_mdd", { path });
@@ -191,19 +160,6 @@ export async function removeRecentFile(path: string): Promise<void> {
   return invoke("remove_recent_file", { path });
 }
 
-export interface UiPrefs {
-  font_size: number;
-  theme: string;
-  split_pct: number;
-  row_density: string;
-  default_hide_unchanged: boolean;
-  auto_expand_first_level: boolean;
-  max_recent_files: number;
-  wrap_table_text: boolean;
-  last_tab_title: string | null;
-  auto_check_updates: boolean;
-}
-
 export async function getUiPrefs(): Promise<UiPrefs> {
   return invoke<UiPrefs>("get_ui_prefs");
 }
@@ -236,22 +192,6 @@ export async function getOpenTabs(): Promise<TabInfo[]> {
 
 // UDS translation
 
-export interface MatchedService {
-  name: string;
-  service_type: string;
-}
-
-export interface UdsLookupResult {
-  matched_services: MatchedService[];
-  sid_name: string;
-}
-
-export interface UdsEncodeResult {
-  service_name: string;
-  hex_bytes: string;
-  raw_bytes: number[];
-}
-
 export async function udsLoad(path: string): Promise<void> {
   return invoke("uds_load", { path });
 }
@@ -274,12 +214,6 @@ export async function udsEncode(
     json,
     variantName: variantName ?? null,
   });
-}
-
-export interface VariantInfo {
-  name: string;
-  is_base_variant: boolean;
-  is_active: boolean;
 }
 
 export async function udsListVariants(): Promise<VariantInfo[]> {

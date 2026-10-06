@@ -20,6 +20,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 use mdd_core::tree::{DetailRowType, DiffStatus, TreeNode};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
+use ts_rs::TS;
 
 use crate::commands::AppState;
 
@@ -64,7 +65,8 @@ impl Default for Settings {
 }
 
 /// Sent to the frontend -- raw token is never exposed, only a boolean flag.
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct SettingsView {
     pub ghe_host: String,
     pub llm_endpoint: String,
@@ -75,7 +77,8 @@ pub struct SettingsView {
 }
 
 /// Received from the frontend to update settings.
-#[derive(Deserialize)]
+#[derive(Deserialize, TS)]
+#[ts(export)]
 pub struct SettingsUpdate {
     pub ghe_host: String,
     pub llm_endpoint: String,
@@ -164,7 +167,8 @@ pub fn clear_llm_token(app: AppHandle) -> Result<(), String> {
 
 // GitHub Enterprise Device Flow
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct DeviceFlowStart {
     pub device_code: String,
     pub user_code: String,
@@ -219,7 +223,8 @@ pub async fn start_ghe_device_flow(
     })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct PollResult {
     pub status: String,
 }
@@ -425,13 +430,15 @@ pub async fn fetch_llm_models(app: AppHandle) -> Result<Vec<String>, String> {
 
 // LLM Chat
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, TS)]
+#[ts(export)]
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct ChatResult {
     pub content: String,
 }

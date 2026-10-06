@@ -27,6 +27,7 @@ use cda_interfaces::{
 };
 use cda_plugin_security::DefaultSecurityPluginData;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 type CdaEcuManager = cda_core::EcuManager<DefaultSecurityPluginData>;
 
@@ -80,14 +81,16 @@ pub struct UdsTranslator {
 }
 
 /// A service matched by name or SID lookup.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct MatchedService {
     pub name: String,
     pub service_type: String,
 }
 
 /// A variant available in the loaded MDD database.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct VariantInfo {
     pub name: String,
     pub is_base_variant: bool,
@@ -95,14 +98,16 @@ pub struct VariantInfo {
 }
 
 /// Result of translating UDS bytes to a service.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct UdsLookupResult {
     pub matched_services: Vec<MatchedService>,
     pub sid_name: String,
 }
 
 /// Result of encoding JSON parameters into UDS bytes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct UdsEncodeResult {
     pub service_name: String,
     pub hex_bytes: String,
@@ -110,7 +115,8 @@ pub struct UdsEncodeResult {
 }
 
 /// JSON Schema description for a service's request parameters.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
 pub struct ServiceSchemaResult {
     pub service_name: String,
     pub request_schema: Option<serde_json::Value>,
