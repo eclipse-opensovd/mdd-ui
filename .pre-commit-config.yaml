@@ -8,7 +8,7 @@
 # terms of the Apache License Version 2.0 which is available at
 # https://www.apache.org/licenses/LICENSE-2.0
 
-exclude: ^(cda-database/src/(flatbuf/diagnostic_description|proto/fileformat)\.rs|frontend/src/api/generated/)$
+exclude: ^(cda-database/src/(flatbuf/diagnostic_description|proto/fileformat)\.rs|frontend/src/api/generated/(?!index\.ts$).*)$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
