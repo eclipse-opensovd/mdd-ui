@@ -26,18 +26,6 @@ feature-depth = 1
 # https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
 ignore = [
-  # GTK3 crates are unmaintained (archived by gtk-rs) but remain transitive
-  # dependencies through Tauri/wry on Linux with no upstream fix available yet.
-  "RUSTSEC-2024-0411", # gtk3 bindings: no longer maintained
-  "RUSTSEC-2024-0412", # gdk
-  "RUSTSEC-2024-0413", # atk
-  "RUSTSEC-2024-0414", # gdkx11-sys
-  "RUSTSEC-2024-0415", # gtk
-  "RUSTSEC-2024-0416", # atk-sys
-  "RUSTSEC-2024-0417", # gdkx11
-  "RUSTSEC-2024-0418", # gdk-sys
-  "RUSTSEC-2024-0419", # gtk3-macros
-  "RUSTSEC-2024-0420", # gtk-sys
   # glib unsound VariantStrIter (Linux only) - no fix without upgrading Tauri
   "RUSTSEC-2024-0429", # glib
   # proc-macro-error unmaintained - via glib-macros/gtk3-macros
