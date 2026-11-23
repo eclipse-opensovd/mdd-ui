@@ -20,7 +20,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 jobs:
+  versions:
+    uses: ./.github/workflows/tool-versions.yml
   build_and_test:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,7 +35,7 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: ${{ needs.versions.outputs.stable }}
           components: clippy, rustfmt
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
@@ -55,6 +58,7 @@ jobs:
       - name: Test
         run: cargo test --locked -- --show-output
   build_all_features:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -66,7 +70,7 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: ${{ needs.versions.outputs.stable }}
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
       - name: Build with all features

@@ -85,12 +85,19 @@ repos:
           - --min-length=4
       - id: validate-cargo-lints
       - id: cargo-fmt
-      - id: clippy
-        name: Clippy
-        entry: shared-config/cargo-clippy.sh
-        language: script
+        name: make fmt-check
+        entry: make fmt-check
+        language: system
         pass_filenames: false
-        args: ["--all-targets", "--", "-D", "warnings"]
+        always_run: true
+        args: []
+      - id: clippy
+        name: make lint-nightly
+        entry: make lint-nightly
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: []
       - id: check-hooks
 
   - repo: local
