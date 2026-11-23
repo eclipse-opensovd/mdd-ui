@@ -9,8 +9,23 @@
 # https://www.apache.org/licenses/LICENSE-2.0
 
 exclude: ^(cda-database/src/(flatbuf/diagnostic_description|proto/fileformat)\.rs|frontend/src/api/generated/(?!index\.ts$).*)$
+default_stages:
+  - pre-commit
+  - manual
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
 
 repos:
+  - repo: local
+    hooks:
+      - id: make-lint-all-features
+        name: make lint-nightly-all-features
+        stages: [manual]
+        groups: [CI]
+        entry: make lint-nightly-all-features
+        language: system
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

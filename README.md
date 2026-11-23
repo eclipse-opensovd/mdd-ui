@@ -12,6 +12,8 @@ https://www.apache.org/licenses/LICENSE-2.0
 
 # mdd-ui
 
+[![Nightly workflow status](https://github.com/eclipse-opensovd/mdd-ui/actions/workflows/nightly.yml/badge.svg?event=schedule)](https://github.com/eclipse-opensovd/mdd-ui/actions/workflows/nightly.yml)
+
 A desktop application and CLI toolbox for MDD diagnostic databases, built with [Tauri](https://tauri.app/) and [Vue.js](https://vuejs.org/). It renders the full ECU diagnostic tree — variants, functional groups, shared data, protocols, services, parameters, and more — in an interactive graphical interface.
 
 ![demo](img/image.png)
@@ -34,14 +36,17 @@ A desktop application and CLI toolbox for MDD diagnostic databases, built with [
 
 - Rust **2024 edition** (1.88+)
 - [Bun](https://bun.sh/) (for the frontend build)
-- [Tauri CLI](https://tauri.app/start/create-project/#manual-setup-tauri-cli) (`cargo install tauri-cli --locked`)
+- [Tauri CLI](https://tauri.app/start/create-project/#manual-setup-tauri-cli)
+
+Run `make setup-devenv` to install the pinned Rust toolchains, Tauri CLI, cargo-deny and the pre-commit hooks. `make doctor` checks the setup, `make help` lists all targets.
 
 ### Build from source
 
 ```sh
 git clone https://github.com/eclipse-opensovd/mdd-ui
 cd mdd-ui
-cargo tauri build
+make setup-devenv
+make tauri-build
 ```
 
 The bundled application is placed at `target/release/bundle/`.
@@ -60,10 +65,10 @@ Subsequent updates via the built-in auto-updater are downloaded programmatically
 
 #### Build without code signing
 
-Signing is required when `createUpdaterArtifacts` is enabled. To skip it without modifying [tauri.conf.json](cci:7://file:///Users/MOHALEX/dev/mdd-ui/tauri.conf.json:0:0-0:0), pass a config override via the shell:
+Signing is required when `createUpdaterArtifacts` is enabled. To skip it without modifying [tauri.conf.json](tauri.conf.json), pass a config override:
 
 ```sh
-cargo tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+make tauri-build-unsigned
 ```
 
 #### Linux: distributions that strip binaries (Arch, CachyOS, NixOS, …)
@@ -71,7 +76,7 @@ cargo tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 Some Linux distributions (e.g. Arch Linux, CachyOS, NixOS) strip debug symbols from binaries during the build process, which can break Tauri's bundler. Set `NO_STRIP=true` to prevent this:
 
 ```sh
-NO_STRIP=true cargo tauri build
+NO_STRIP=true make tauri-build
 ```
 
 ## Usage
@@ -81,8 +86,8 @@ NO_STRIP=true cargo tauri build
 Launch the graphical application:
 
 ```sh
-cargo tauri dev      # development, with hot-reload
-cargo tauri build    # release build
+make tauri-dev      # development, with hot-reload
+make tauri-build    # release build
 ```
 
 ### Export Diff (plain text)
@@ -107,7 +112,7 @@ mdd-ui can run as an [MCP (Model Context Protocol)](https://modelcontextprotocol
 This requires building with the `mcp` feature:
 
 ```sh
-cargo build --release --features mcp
+make build ARGS="--release --features mcp"
 ```
 
 Then start the server:

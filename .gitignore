@@ -31,3 +31,5 @@ src/mdd-core/frontend
 # Frontend (Tauri + Vue)
 node_modules
 dist
+
+.venv

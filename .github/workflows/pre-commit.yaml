@@ -16,9 +16,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-env:
-  PYTHON_VERSION: 3.13
-  PRE_COMMIT_VERSION: 4.2
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
@@ -38,5 +35,20 @@ jobs:
           components: clippy, rustfmt
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
+      - name: Install Go (required for gitleaks)
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Cache prek hooks
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/prek
+          key: prek-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            prek-${{ runner.os }}-
+      # All hooks, including the manual-stage clippy with all features.
       - name: Run checks
-        uses: eclipse-opensovd/cicd-workflows/pre-commit-action@07140bdd84f20b66fd4aff58a83c5148deec388c
+        run: make precommit-all-features
