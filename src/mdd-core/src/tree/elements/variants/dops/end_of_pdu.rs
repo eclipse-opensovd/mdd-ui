@@ -23,17 +23,8 @@ pub(super) fn build_end_of_pdu_dop_tabs(
     // Remove the DOP Variant row -- not needed per requirements
     types_rows.retain(|row| row.cells.first().map(|c| c.text.as_str()) != Some("DOP Variant"));
 
-    if let Some(field) = eof_field.field()
-        && let Some(basic_struct) = field.basic_structure()
-    {
-        let struct_name = basic_struct.short_name().unwrap_or("?").to_owned();
-        types_rows.push(kv_row(
-            "Basic Structure",
-            struct_name,
-            CellType::DopReference,
-            0,
-        ));
-    }
+    let mut extra_sections = Vec::new();
+    super::push_basic_structure!(eof_field.field(), types_rows, extra_sections);
 
     if let Some(min_items) = eof_field.min_number_of_items() {
         types_rows.push(kv_row(
@@ -54,4 +45,5 @@ pub(super) fn build_end_of_pdu_dop_tabs(
     }
 
     push_types_section(std::mem::take(types_rows), sections);
+    sections.extend(extra_sections);
 }

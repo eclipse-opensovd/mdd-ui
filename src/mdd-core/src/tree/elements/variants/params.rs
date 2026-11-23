@@ -487,9 +487,98 @@ struct ParamInfo {
     dop_badge: String,
     semantic: String,
     param_id: u32,
+    /// Nesting depth (0 = top level, >0 = sub-element of a structure).
+    depth: usize,
+    /// Byte size of the referenced structure, if known.
+    struct_byte_size: Option<u32>,
+}
+
+/// Maximum nesting depth when expanding structure sub-elements.
+const MAX_STRUCT_DEPTH: usize = 8;
+
+/// Return the structure DOP referenced by a `Value` parameter, if any.
+/// For field DOPs (static / dynamic length / end-of-PDU) the basic
+/// structure (one repeated item) is returned, flagged with `true`.
+fn param_structure<'a>(
+    param: &Parameter<'a>,
+) -> Option<(cda_database::datatypes::StructureDop<'a>, bool)> {
+    if !matches!(
+        param.param_type(),
+        Ok(cda_database::datatypes::ParamType::Value)
+    ) {
+        return None;
+    }
+    let dop = param.0.specific_data_as_value().and_then(|vd| vd.dop())?;
+    if let Some(s) = dop.specific_data_as_structure() {
+        return Some((cda_database::datatypes::StructureDop(s), false));
+    }
+    let field = dop
+        .specific_data_as_end_of_pdu_field()
+        .and_then(|f| f.field())
+        .or_else(|| dop.specific_data_as_static_field().and_then(|f| f.field()))
+        .or_else(|| {
+            dop.specific_data_as_dynamic_length_field()
+                .and_then(|f| f.field())
+        })?;
+    field
+        .basic_structure()
+        .and_then(|b| b.specific_data_as_structure())
+        .map(|s| (cda_database::datatypes::StructureDop(s), true))
+}
+
+/// Collect parameter infos, recursively expanding structure DOPs so their
+/// sub-elements appear as indented rows below the owning parameter.
+/// Byte positions of sub-elements are shown absolute (relative to the PDU).
+fn collect_param_infos(
+    params: &[Parameter<'_>],
+    base_byte: u32,
+    depth: usize,
+    out: &mut Vec<ParamInfo>,
+) {
+    for param in params {
+        let byte_pos = base_byte.saturating_add(param.byte_position());
+        let structure = param_structure(param);
+        out.push(ParamInfo {
+            name: param.short_name().unwrap_or("?").to_owned(),
+            byte_pos,
+            bit_pos: param.bit_position(),
+            bit_len: crate::uds::byte_pattern::extract_bit_length(param),
+            value: extract_coded_value(param),
+            dop_name: extract_dop_name(param),
+            dop_badge: extract_dop_badge(param).to_owned(),
+            semantic: param.semantic().unwrap_or_default().to_owned(),
+            param_id: param.id(),
+            depth,
+            struct_byte_size: structure
+                .as_ref()
+                .filter(|(_, is_field)| !is_field)
+                .and_then(|(s, _)| s.byte_size()),
+        });
+
+        if depth < MAX_STRUCT_DEPTH
+            && let Some(sub) = structure.as_ref().and_then(|(s, _)| s.params())
+        {
+            let sub: Vec<Parameter<'_>> = sub.iter().map(Parameter).collect();
+            collect_param_infos(&sub, byte_pos, depth.saturating_add(1), out);
+        }
+    }
+}
+
+/// Find the next parameter on the same nesting level (stopping at the end of
+/// the enclosing structure) for byte length estimation.
+fn next_sibling(infos: &[ParamInfo], idx: usize) -> Option<&ParamInfo> {
+    let depth = infos.get(idx)?.depth;
+    infos
+        .iter()
+        .skip(idx.saturating_add(1))
+        .take_while(|i| i.depth >= depth)
+        .find(|i| i.depth == depth)
 }
 
 fn param_byte_len_text(info: &ParamInfo, next: Option<&ParamInfo>) -> String {
+    if let Some(size) = info.struct_byte_size {
+        return size.to_string();
+    }
     if let Some(bl) = info.bit_len {
         let effective_start = if info.bit_pos == BIT_POSITION_UNSET {
             0
@@ -539,20 +628,8 @@ where
         DetailCell::text("Semantic"),
     ]);
 
-    let infos: Vec<ParamInfo> = params
-        .into_iter()
-        .map(|param| ParamInfo {
-            name: param.short_name().unwrap_or("?").to_owned(),
-            byte_pos: param.byte_position(),
-            bit_pos: param.bit_position(),
-            bit_len: crate::uds::byte_pattern::extract_bit_length(&param),
-            value: extract_coded_value(&param),
-            dop_name: extract_dop_name(&param),
-            dop_badge: extract_dop_badge(&param).to_owned(),
-            semantic: param.semantic().unwrap_or_default().to_owned(),
-            param_id: param.id(),
-        })
-        .collect();
+    let mut infos: Vec<ParamInfo> = Vec::with_capacity(params.len());
+    collect_param_infos(&params, 0, 0, &mut infos);
 
     let rows: Vec<DetailRow> = infos
         .iter()
@@ -588,7 +665,7 @@ where
                 .bit_len
                 .map_or_else(|| "-".to_owned(), |bl| bl.to_string());
 
-            let byte_len_text = param_byte_len_text(info, infos.get(idx.saturating_add(1)));
+            let byte_len_text = param_byte_len_text(info, next_sibling(&infos, idx));
 
             let mut row = DetailRow::normal(
                 vec![
@@ -605,7 +682,7 @@ where
                     dop_cell,
                     DetailCell::text(info.semantic.clone()),
                 ],
-                0,
+                info.depth,
             );
             row.metadata = Some(crate::tree::RowMetadata::ParameterRow {
                 param_id: info.param_id,
