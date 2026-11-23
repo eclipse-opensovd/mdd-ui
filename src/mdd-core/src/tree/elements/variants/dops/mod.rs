@@ -783,6 +783,48 @@ fn kv_row(key: &str, value: String, value_type: CellType, indent: usize) -> Deta
     )
 }
 
+/// Key/value row referencing another DOP, navigable via its tree label.
+fn dop_ref_row(key: &str, dop_name: &str) -> DetailRow {
+    let display = parse_dop_name(dop_name).display_name();
+    let nav_name = if display.is_empty() {
+        dop_name.to_owned()
+    } else {
+        display
+    };
+    DetailRow::normal(
+        vec![
+            DetailCell::text(key),
+            DetailCell::new(nav_name.clone(), CellType::DopReference).with_jump(
+                crate::tree::CellJumpTarget::new(crate::tree::types::CellJumpTargetType::Dop {
+                    index: usize::MAX,
+                    name: nav_name,
+                }),
+            ),
+        ],
+        0,
+    )
+}
+
+/// Add a "Basic Structure" reference row and a tab listing its params.
+macro_rules! push_basic_structure {
+    ($field:expr, $types_rows:expr, $sections:expr) => {
+        if let Some(basic) = $field.and_then(|f| f.basic_structure()) {
+            $types_rows.push(super::dop_ref_row(
+                "Basic Structure",
+                basic.short_name().unwrap_or("?"),
+            ));
+            if let Some(s) = basic.specific_data_as_structure() {
+                let mut section = super::structures::build_params_section(
+                    &cda_database::datatypes::StructureDop(s),
+                );
+                section.title = "Basic Structure Params".to_owned();
+                $sections.push(section);
+            }
+        }
+    };
+}
+pub(super) use push_basic_structure;
+
 /// Build overview table for a semantic DOP category
 fn build_category_overview_table(dops: &[DopInfo<'_>]) -> Vec<DetailSectionData> {
     let header = DetailRow::header(vec![

@@ -44,17 +44,11 @@ pub(super) fn build_static_field_dop_tabs(
             CellType::Text,
             0,
         ));
-
-        if let Some(basic_struct) = field.basic_structure() {
-            let struct_name = basic_struct.short_name().unwrap_or("?").to_owned();
-            types_rows.push(kv_row(
-                "Basic Structure",
-                struct_name,
-                CellType::DopReference,
-                0,
-            ));
-        }
     }
 
+    let mut extra_sections = Vec::new();
+    super::push_basic_structure!(static_field.field(), types_rows, extra_sections);
+
     push_types_section(std::mem::take(types_rows), sections);
+    sections.extend(extra_sections);
 }
