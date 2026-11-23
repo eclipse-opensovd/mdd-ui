@@ -131,6 +131,8 @@ onMounted(async () => {
 
   await initPromise;
   window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("mousedown", suppressNavButtons);
+  window.addEventListener("mouseup", handleNavButtons);
   if (initialFile) await store.loadFile(initialFile);
   if (store.autoCheckUpdates) {
     check()
@@ -143,6 +145,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("mousedown", suppressNavButtons);
+  window.removeEventListener("mouseup", handleNavButtons);
   llmStore.stopPolling();
   if (unlistenOpenFile) unlistenOpenFile();
   if (unlistenDragDrop) unlistenDragDrop();
@@ -257,6 +261,21 @@ function handleKeydown(e: KeyboardEvent) {
     case "-":
       store.decreaseFontSize();
       break;
+  }
+}
+
+// Mouse side buttons: 3 = back, 4 = forward
+function suppressNavButtons(e: MouseEvent) {
+  if (e.button === 3 || e.button === 4) e.preventDefault();
+}
+
+function handleNavButtons(e: MouseEvent) {
+  if (e.button === 3) {
+    e.preventDefault();
+    store.goBack();
+  } else if (e.button === 4) {
+    e.preventDefault();
+    if (store.canGoForward) store.goForward();
   }
 }
 
