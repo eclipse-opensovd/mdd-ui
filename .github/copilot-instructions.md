@@ -12,8 +12,10 @@ https://www.apache.org/licenses/LICENSE-2.0
 
 # Instructions
 
-* Run `cargo +nightly fmt -- --config error_on_unformatted=true,error_on_line_overflow=true,format_strings=true,group_imports=StdExternalCrate,imports_granularity=Crate` to format the code according to Rust's standard style.
-* Run `cargo +nightly clippy` to check for common mistakes and improve the code quality.
+* Use the `make` targets instead of calling `cargo` directly, so the pinned toolchains are used (see `make help`).
+* Run `make fmt` to format the code.
+* Run `make lint-nightly` to check for common mistakes and improve the code quality.
+* Run `make precommit` before committing to run all checks that CI runs.
 
 ## Strucutre
 

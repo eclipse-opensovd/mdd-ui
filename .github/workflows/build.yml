@@ -20,7 +20,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 jobs:
+  versions:
+    uses: ./.github/workflows/tool-versions.yml
   build_and_test:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,29 +35,24 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: ${{ needs.versions.outputs.stable }}
           components: clippy, rustfmt
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
-      - name: Install cargo-deny
-        run: cargo install --locked --version 0.18.9 cargo-deny
-      - name: Install taplo toml toolkit
-        run: cargo install --locked --version 0.10.0 taplo-cli
+      - name: Install tools
+        run: make install-tools
       - name: Build
-        run: cargo build --locked --verbose
+        run: make build ARGS=--verbose
       - name: Check licenses
-        run: cargo deny check licenses
-      - name: Check advisories
-        run: cargo deny check advisories
+        run: make deny ARGS=licenses
       - name: Check allowed sources
-        run: cargo deny check sources
+        run: make deny ARGS=sources
       - name: Check banned practises
-        run: cargo deny check bans
-      - name: Build
-        run: cargo build --locked --verbose
+        run: make deny ARGS=bans
       - name: Test
-        run: cargo test --locked -- --show-output
+        run: make test ARGS="-- --show-output"
   build_all_features:
+    needs: versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -66,10 +64,10 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: 1.88.0
+          toolchain: ${{ needs.versions.outputs.stable }}
       - name: Install Linux system dependencies
         uses: ./.github/actions/install-linux-deps
       - name: Build with all features
-        run: cargo build --locked --all-features --verbose
+        run: make build ARGS="--all-features --verbose"
       - name: Test with all features
-        run: cargo test --locked --all-features -- --show-output
+        run: make test ARGS="--all-features -- --show-output"
