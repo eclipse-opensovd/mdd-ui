@@ -67,7 +67,7 @@ serde_json = "1"
 ts-rs = { version = "12", features = ["serde-json-impl"] }
 
 # MCP server (optional)
-rmcp = { version = "1.5", features = [
+rmcp = { version = "2.1", features = [
   "server",
   "transport-io",
   "macros",
