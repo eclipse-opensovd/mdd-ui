@@ -43,12 +43,10 @@ pub fn add_diag_comms<'a>(
             .to_lowercase()
     });
 
-    let mut parent_services: Vec<(DiagService<'_>, String)> =
-        if let Some(parent_refs) = variant_parent_refs {
-            get_parent_ref_services_recursive(parent_refs)
-        } else {
-            Vec::new()
-        };
+    let InheritedServices {
+        inherited: mut parent_services,
+        overridden,
+    } = resolve_inherited_services(layer, variant_parent_refs);
 
     parent_services.sort_by_cached_key(|(ds, _)| {
         ds.diag_comm()
@@ -149,6 +147,7 @@ pub fn add_diag_comms<'a>(
             &parent_services,
             &job_names,
             &node_indices,
+            &overridden,
         );
         b.set_detail_sections(header_idx, vec![detail_section]);
     }
@@ -243,104 +242,189 @@ fn add_single_ecu_jobs(
     }
 }
 
+/// Inherited services of a layer after applying ODX override semantics.
+pub struct InheritedServices<'a> {
+    /// Services effectively inherited (not overridden locally), with source layer name.
+    pub inherited: Vec<(DiagService<'a>, String)>,
+    /// Short names of local diag-comms that override an inherited one,
+    /// mapped to the layer name of the overridden service.
+    pub overridden: std::collections::HashMap<String, String>,
+}
+
+/// Resolve the services inherited by `layer` from `parent_refs`.
+///
+/// A local diag-comm (service or job) with the same short name as an inherited
+/// service overrides it, so the inherited one is removed from the result and
+/// recorded in [`InheritedServices::overridden`].
+pub fn resolve_inherited_services<'a>(
+    layer: &DiagLayer<'a>,
+    parent_refs: Option<impl Iterator<Item = ParentRef<'a>>>,
+) -> InheritedServices<'a> {
+    let Some(parent_refs) = parent_refs else {
+        return InheritedServices {
+            inherited: Vec::new(),
+            overridden: std::collections::HashMap::new(),
+        };
+    };
+
+    let local_names: std::collections::HashSet<&str> = layer
+        .diag_services()
+        .into_iter()
+        .flat_map(|s| s.iter().filter_map(|ds| ds.diag_comm()?.short_name()))
+        .chain(
+            layer
+                .single_ecu_jobs()
+                .into_iter()
+                .flat_map(|j| j.iter().filter_map(|job| job.diag_comm()?.short_name())),
+        )
+        .collect();
+
+    let mut overridden = std::collections::HashMap::new();
+    let inherited = get_parent_ref_services_recursive(parent_refs)
+        .into_iter()
+        .filter(|(ds, source)| {
+            let Some(name) = ds.diag_comm().and_then(|dc| dc.short_name()) else {
+                return true;
+            };
+            if local_names.contains(name) {
+                overridden.insert(name.to_owned(), source.clone());
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+
+    InheritedServices {
+        inherited,
+        overridden,
+    }
+}
+
+/// Text for the "Source" column of service list tables.
+pub fn service_source_label(
+    short_name: &str,
+    inherited_from: Option<&str>,
+    overridden: &std::collections::HashMap<String, String>,
+) -> String {
+    match inherited_from {
+        Some(layer) => format!("Inherited ({layer})"),
+        None => overridden.get(short_name).map_or_else(
+            || "Local".to_owned(),
+            |layer| format!("Local (overrides {layer})"),
+        ),
+    }
+}
+
 /// Recursively resolve services from parent references, returning each
-/// service paired with the name of the layer it was inherited from.
+/// service paired with the name of the layer it was defined in.
+///
+/// For every parent ref the effective services of the parent layer are
+/// collected: the parent's own services plus everything the parent itself
+/// inherits (with the parent's local overrides applied). Afterwards the
+/// ref's NOT-INHERITED-DIAG-COMMS short names are removed.
 /// Deduplicates services by short name, keeping the first occurrence.
-pub fn get_parent_ref_services_recursive<'a>(
+fn get_parent_ref_services_recursive<'a>(
     parent_refs: impl Iterator<Item = ParentRef<'a>>,
 ) -> Vec<(DiagService<'a>, String)> {
-    fn filter_not_inherited_services<'a>(
-        diag_services: impl Iterator<Item = impl Into<DiagService<'a>>>,
-        not_inherited_names: &[&str],
-        source_layer_name: &str,
-    ) -> Vec<(DiagService<'a>, String)> {
-        diag_services
-            .into_iter()
-            .map(Into::into)
-            .filter(|service| {
-                service
-                    .diag_comm()
-                    .and_then(|dc| dc.short_name())
-                    .is_none_or(|name| !not_inherited_names.contains(&name))
-            })
-            .map(|service| (service, source_layer_name.to_owned()))
-            .collect()
+    /// Guard against malformed (cyclic) inheritance graphs.
+    const MAX_DEPTH: usize = 16;
+
+    fn short_name<'a>(ds: &DiagService<'a>) -> Option<&'a str> {
+        ds.diag_comm().and_then(|dc| dc.short_name())
+    }
+
+    /// Resolve the parent layer and its own parent refs for one parent ref.
+    fn resolve_ref<'a>(
+        parent_ref: &ParentRef<'a>,
+    ) -> Option<(DiagLayer<'a>, Option<Vec<ParentRef<'a>>>)> {
+        use cda_database::datatypes::ParentRefType;
+        match parent_ref.ref_type().try_into() {
+            Ok(ParentRefType::EcuSharedData) => {
+                let esd = parent_ref.ref__as_ecu_shared_data()?;
+                Some((DiagLayer(esd.diag_layer()?), None))
+            }
+            Ok(ParentRefType::FunctionalGroup) => {
+                let fg = parent_ref.ref__as_functional_group()?;
+                Some((
+                    DiagLayer(fg.diag_layer()?),
+                    fg.parent_refs().map(|r| r.iter().map(ParentRef).collect()),
+                ))
+            }
+            Ok(ParentRefType::Protocol) => {
+                let protocol = parent_ref.ref__as_protocol()?;
+                Some((
+                    DiagLayer(protocol.diag_layer()?),
+                    protocol
+                        .parent_refs()
+                        .map(|r| r.iter().map(ParentRef).collect()),
+                ))
+            }
+            Ok(ParentRefType::Variant) => {
+                let variant = parent_ref.ref__as_variant()?;
+                Some((
+                    DiagLayer(variant.diag_layer()?),
+                    variant
+                        .parent_refs()
+                        .map(|r| r.iter().map(ParentRef).collect()),
+                ))
+            }
+            Ok(ParentRefType::TableDop | ParentRefType::NONE) | Err(_) => None,
+        }
     }
 
     fn find_services_recursive<'a>(
         parent_refs: impl Iterator<Item = ParentRef<'a>>,
+        depth: usize,
     ) -> Vec<(DiagService<'a>, String)> {
+        if depth > MAX_DEPTH {
+            return Vec::new();
+        }
         parent_refs
-            .into_iter()
             .filter_map(|parent_ref| {
                 let not_inherited_names: Vec<&str> = parent_ref
                     .not_inherited_diag_comm_short_names()
                     .map(|names| names.iter().collect())
                     .unwrap_or_default();
 
-                match parent_ref.ref_type().try_into() {
-                    Ok(cda_database::datatypes::ParentRefType::EcuSharedData) => {
-                        let ecu_shared_data = parent_ref.ref__as_ecu_shared_data()?;
-                        let layer = ecu_shared_data.diag_layer()?;
-                        let layer_name = layer.short_name().unwrap_or("EcuSharedData").to_owned();
-                        let services = layer.diag_services()?.iter().map(DiagService);
-                        Some(filter_not_inherited_services(
-                            services,
-                            &not_inherited_names,
-                            &layer_name,
-                        ))
-                    }
-                    Ok(cda_database::datatypes::ParentRefType::FunctionalGroup) => parent_ref
-                        .ref__as_functional_group()
-                        .and_then(|fg| fg.parent_refs())
-                        .map(|nested_refs| {
-                            find_services_recursive(nested_refs.iter().map(ParentRef))
-                        }),
-                    Ok(cda_database::datatypes::ParentRefType::Protocol) => {
-                        let protocol = parent_ref.ref__as_protocol()?;
-                        let layer = protocol.diag_layer()?;
-                        let layer_name = layer.short_name().unwrap_or("Protocol").to_owned();
-                        let services = layer.diag_services()?.iter().map(DiagService);
-                        Some(filter_not_inherited_services(
-                            services,
-                            &not_inherited_names,
-                            &layer_name,
-                        ))
-                    }
-                    Ok(cda_database::datatypes::ParentRefType::Variant) => {
-                        let variant = parent_ref.ref__as_variant()?;
-                        let layer = variant.diag_layer()?;
-                        let layer_name = layer.short_name().unwrap_or("Variant").to_owned();
-                        let services = layer.diag_services()?.iter().map(DiagService);
-                        Some(filter_not_inherited_services(
-                            services,
-                            &not_inherited_names,
-                            &layer_name,
-                        ))
-                    }
-                    Ok(
-                        cda_database::datatypes::ParentRefType::TableDop
-                        | cda_database::datatypes::ParentRefType::NONE,
-                    )
-                    | Err(_) => None,
-                }
+                let (layer, nested_refs) = resolve_ref(&parent_ref)?;
+                let layer_name = layer.short_name().unwrap_or("?").to_owned();
+
+                let own: Vec<(DiagService<'a>, String)> = layer
+                    .diag_services()
+                    .into_iter()
+                    .flat_map(|s| s.iter().map(DiagService))
+                    .map(|ds| (ds, layer_name.clone()))
+                    .collect();
+                let own_names: std::collections::HashSet<&str> =
+                    own.iter().filter_map(|(ds, _)| short_name(ds)).collect();
+
+                let inherited = nested_refs
+                    .map(|refs| find_services_recursive(refs.into_iter(), depth.saturating_add(1)))
+                    .unwrap_or_default()
+                    .into_iter()
+                    // the parent's own services override what it inherits
+                    .filter(|(ds, _)| short_name(ds).is_none_or(|n| !own_names.contains(n)));
+
+                Some(
+                    own.into_iter()
+                        .chain(inherited)
+                        .filter(|(ds, _)| {
+                            short_name(ds).is_none_or(|n| !not_inherited_names.contains(&n))
+                        })
+                        .collect::<Vec<_>>(),
+                )
             })
             .flatten()
             .collect()
     }
 
-    let all_services = find_services_recursive(parent_refs);
+    let all_services = find_services_recursive(parent_refs, 0);
 
     // Deduplicate by service short name, keeping the first occurrence
     let mut seen = std::collections::HashSet::new();
     all_services
         .into_iter()
-        .filter(|(service, _)| {
-            let short_name = service
-                .diag_comm()
-                .and_then(|dc| dc.short_name())
-                .unwrap_or("");
-            seen.insert(short_name.to_owned())
-        })
+        .filter(|(service, _)| seen.insert(short_name(service).unwrap_or("").to_owned()))
         .collect()
 }

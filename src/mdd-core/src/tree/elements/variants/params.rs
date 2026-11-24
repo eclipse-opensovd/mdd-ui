@@ -715,7 +715,7 @@ where
 }
 
 /// Build a service-list table section (the header table showing all services
-/// with Short Name / ID / Inherited columns).  Used by both the Requests and
+/// with ID / Short Name / Source columns).  Used by both the Requests and
 /// Responses list headers.
 ///
 /// `node_indices` maps each service short name to its tree-node index so
@@ -727,15 +727,17 @@ pub fn build_service_list_table_section(
     label: &str,
     section_type: DetailSectionType,
     node_indices: &std::collections::HashMap<String, usize>,
+    overridden: &std::collections::HashMap<String, String>,
 ) -> DetailSectionData {
     let header = DetailRow::header(vec![
         DetailCell::text("ID"),
         DetailCell::text("Short Name"),
-        DetailCell::text("Inherited"),
+        DetailCell::text("Source"),
     ]);
 
-    let build_row = |ds: &DiagService<'_>, inherited: &str| -> Option<DetailRow> {
+    let build_row = |ds: &DiagService<'_>, inherited_from: Option<&str>| -> Option<DetailRow> {
         let name = ds.diag_comm()?.short_name().unwrap_or("?").to_owned();
+        let source = super::services::service_source_label(&name, inherited_from, overridden);
         let id_str = format_service_id(ds);
         let id = if id_str.is_empty() {
             "-".to_owned()
@@ -751,18 +753,18 @@ pub fn build_service_list_table_section(
             vec![
                 DetailCell::text(id),
                 DetailCell::new(name, CellType::ParameterName).with_jump(jump),
-                DetailCell::text(inherited),
+                DetailCell::text(source),
             ],
             0,
         ))
     };
 
     let mut rows = Vec::new();
-    rows.extend(own_services.iter().filter_map(|ds| build_row(ds, "false")));
+    rows.extend(own_services.iter().filter_map(|ds| build_row(ds, None)));
     rows.extend(
         parent_services
             .iter()
-            .filter_map(|(ds, _)| build_row(ds, "true")),
+            .filter_map(|(ds, layer)| build_row(ds, Some(layer.as_str()))),
     );
 
     let total_count = own_services.len().saturating_add(parent_services.len());
@@ -775,9 +777,9 @@ pub fn build_service_list_table_section(
             header,
             rows,
             constraints: vec![
-                ColumnConstraint::Percentage(20),
-                ColumnConstraint::Percentage(60),
-                ColumnConstraint::Percentage(20),
+                ColumnConstraint::Percentage(15),
+                ColumnConstraint::Percentage(45),
+                ColumnConstraint::Percentage(40),
             ],
             use_row_selection: true,
         },

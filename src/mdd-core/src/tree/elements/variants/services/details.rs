@@ -79,58 +79,61 @@ pub(super) fn build_diag_comms_table_section(
     parent_services: &[(DiagService<'_>, String)],
     job_names: &[String],
     node_indices: &std::collections::HashMap<String, usize>,
+    overridden: &std::collections::HashMap<String, String>,
 ) -> DetailSectionData {
     let header = DetailRow::header(vec![
         DetailCell::text("ID"),
         DetailCell::text("Short Name"),
         DetailCell::text("Funct Class"),
         DetailCell::text("Type"),
-        DetailCell::text("Inherited"),
+        DetailCell::text("Source"),
     ]);
 
     let mut rows = Vec::new();
 
-    let build_service_row = |ds: &DiagService<'_>, inherited: &str| -> Option<DetailRow> {
-        let dc = ds.diag_comm()?;
-        let name = dc.short_name().unwrap_or("?").to_owned();
-        let id_str = format_service_id(ds);
-        let id = if id_str.is_empty() {
-            "-".to_owned()
-        } else {
-            id_str
+    let build_service_row =
+        |ds: &DiagService<'_>, inherited_from: Option<&str>| -> Option<DetailRow> {
+            let dc = ds.diag_comm()?;
+            let name = dc.short_name().unwrap_or("?").to_owned();
+            let source = super::diag_comms::service_source_label(&name, inherited_from, overridden);
+            let id_str = format_service_id(ds);
+            let id = if id_str.is_empty() {
+                "-".to_owned()
+            } else {
+                id_str
+            };
+
+            let funct_class = dc
+                .funct_class()
+                .and_then(|fc_list| (!fc_list.is_empty()).then(|| fc_list.get(0)))
+                .and_then(|fc| fc.short_name())
+                .unwrap_or("-")
+                .to_owned();
+
+            let jump = make_index_jump(&name, node_indices);
+
+            Some(DetailRow::normal(
+                vec![
+                    DetailCell::text(id),
+                    DetailCell::new(name, CellType::ParameterName).with_jump(jump),
+                    DetailCell::text(funct_class),
+                    DetailCell::text("Service"),
+                    DetailCell::text(source),
+                ],
+                0,
+            ))
         };
-
-        let funct_class = dc
-            .funct_class()
-            .and_then(|fc_list| (!fc_list.is_empty()).then(|| fc_list.get(0)))
-            .and_then(|fc| fc.short_name())
-            .unwrap_or("-")
-            .to_owned();
-
-        let jump = make_index_jump(&name, node_indices);
-
-        Some(DetailRow::normal(
-            vec![
-                DetailCell::text(id),
-                DetailCell::new(name, CellType::ParameterName).with_jump(jump),
-                DetailCell::text(funct_class),
-                DetailCell::text("Service"),
-                DetailCell::text(inherited),
-            ],
-            0,
-        ))
-    };
 
     rows.extend(
         own_services
             .iter()
-            .filter_map(|ds| build_service_row(ds, "false")),
+            .filter_map(|ds| build_service_row(ds, None)),
     );
 
     rows.extend(
         parent_services
             .iter()
-            .filter_map(|(ds, _)| build_service_row(ds, "true")),
+            .filter_map(|(ds, layer)| build_service_row(ds, Some(layer.as_str()))),
     );
 
     rows.extend(job_names.iter().map(|job_name| {
@@ -141,7 +144,9 @@ pub(super) fn build_diag_comms_table_section(
                 DetailCell::new(job_name.clone(), CellType::ParameterName).with_jump(jump),
                 DetailCell::text("-"),
                 DetailCell::text("Job"),
-                DetailCell::text("false"),
+                DetailCell::text(super::diag_comms::service_source_label(
+                    job_name, None, overridden,
+                )),
             ],
             0,
         )
@@ -159,11 +164,11 @@ pub(super) fn build_diag_comms_table_section(
             header,
             rows,
             constraints: vec![
-                ColumnConstraint::Percentage(12),
+                ColumnConstraint::Percentage(10),
+                ColumnConstraint::Percentage(30),
+                ColumnConstraint::Percentage(15),
+                ColumnConstraint::Percentage(10),
                 ColumnConstraint::Percentage(35),
-                ColumnConstraint::Percentage(20),
-                ColumnConstraint::Percentage(13),
-                ColumnConstraint::Percentage(20),
             ],
             use_row_selection: true,
         },

@@ -15,7 +15,7 @@ use cda_database::datatypes::{DiagLayer, DiagService, Parameter, ParentRef};
 use super::{
     format_service_display_name, format_service_id,
     params::{build_param_detail_sections, build_param_section, build_service_list_table_section},
-    services::{build_service_overview_section, get_parent_ref_services_recursive},
+    services::{InheritedServices, build_service_overview_section, resolve_inherited_services},
 };
 use crate::tree::{
     builder::TreeBuilder,
@@ -199,15 +199,14 @@ fn add_responses_section<'a>(
         })
         .unwrap_or_default();
 
-    let parent_services: Vec<(DiagService<'_>, String)> =
-        if let Some(parent_refs) = variant_parent_refs {
-            get_parent_ref_services_recursive(parent_refs)
-                .into_iter()
-                .filter(|(ds, _)| has_responses(ds))
-                .collect()
-        } else {
-            Vec::new()
-        };
+    let InheritedServices {
+        inherited,
+        overridden,
+    } = resolve_inherited_services(layer, variant_parent_refs);
+    let parent_services: Vec<(DiagService<'_>, String)> = inherited
+        .into_iter()
+        .filter(|(ds, _)| has_responses(ds))
+        .collect();
 
     let total_count = own_services.len().saturating_add(parent_services.len());
 
@@ -265,6 +264,7 @@ fn add_responses_section<'a>(
             &format!("{}s", kind.label),
             kind.section_type,
             &node_indices,
+            &overridden,
         );
         b.set_detail_sections(header_idx, vec![detail_section]);
     }
