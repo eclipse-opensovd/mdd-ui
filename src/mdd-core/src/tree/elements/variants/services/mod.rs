@@ -15,7 +15,9 @@ mod diag_comms;
 
 use cda_database::datatypes::{ParamType, Parameter};
 pub(crate) use details::build_service_overview_section;
-pub use diag_comms::{add_diag_comms, get_parent_ref_services_recursive};
+pub use diag_comms::{
+    InheritedServices, add_diag_comms, resolve_inherited_services, service_source_label,
+};
 
 /// Extract the hex-formatted coded value from a `CodedConst` parameter.
 pub fn extract_coded_value(param: &Parameter<'_>) -> String {
