@@ -116,14 +116,14 @@ fn build_cases_section(mux_dop: &cda_database::datatypes::MuxDop<'_>) -> DetailS
                 .structure()
                 .and_then(|s| s.short_name())
                 .map(str::to_owned);
-            let lower = case
-                .lower_limit()
-                .map(|l| format!("{l:?}"))
-                .unwrap_or_default();
-            let upper = case
-                .upper_limit()
-                .map(|l| format!("{l:?}"))
-                .unwrap_or_default();
+            let lower = case.lower_limit().map_or_else(
+                || "-".to_owned(),
+                |l| format_limit(l.value(), l.interval_type().into(), LimitSide::Lower),
+            );
+            let upper = case.upper_limit().map_or_else(
+                || "-".to_owned(),
+                |l| format_limit(l.value(), l.interval_type().into(), LimitSide::Upper),
+            );
 
             let dop_jump = struct_name.as_ref().map(|n| {
                 crate::tree::CellJumpTarget::new(CellJumpTargetType::Dop {
@@ -172,5 +172,70 @@ fn build_cases_section(mux_dop: &cda_database::datatypes::MuxDop<'_>) -> DetailS
             use_row_selection: true,
         },
         byte_pattern_rows: None,
+    }
+}
+
+#[derive(Clone, Copy)]
+enum LimitSide {
+    Lower,
+    Upper,
+}
+
+/// Render a case limit as a human readable bound, e.g. `>= 333` (as a math symbol), `< 10`, `-inf`.
+fn format_limit(
+    value: Option<&str>,
+    interval: cda_database::datatypes::IntervalType,
+    side: LimitSide,
+) -> String {
+    use cda_database::datatypes::IntervalType;
+    match (interval, side, value) {
+        (IntervalType::Infinite, LimitSide::Lower, _) => "-\u{221e}".to_owned(),
+        (IntervalType::Infinite, LimitSide::Upper, _) => "+\u{221e}".to_owned(),
+        (_, _, None) => "-".to_owned(),
+        (IntervalType::Closed, LimitSide::Lower, Some(v)) => format!("\u{2265} {}", with_hex(v)),
+        (IntervalType::Open, LimitSide::Lower, Some(v)) => format!("> {}", with_hex(v)),
+        (IntervalType::Closed, LimitSide::Upper, Some(v)) => format!("\u{2264} {}", with_hex(v)),
+        (IntervalType::Open, LimitSide::Upper, Some(v)) => format!("< {}", with_hex(v)),
+    }
+}
+
+/// Append the hexadecimal representation for integer values, e.g. `333 (0x14D)`.
+/// Non-integer values (floats, strings, byte fields) are returned unchanged.
+fn with_hex(value: &str) -> String {
+    match value.trim().parse::<i128>() {
+        Ok(n) if n < 0 => format!("{value} (-0x{:X})", n.unsigned_abs()),
+        Ok(n) => format!("{value} (0x{n:X})"),
+        Err(_) => value.to_owned(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cda_database::datatypes::IntervalType;
+
+    use super::*;
+
+    #[test]
+    fn formats_limits_with_hex() {
+        assert_eq!(
+            format_limit(Some("333"), IntervalType::Closed, LimitSide::Lower),
+            "\u{2265} 333 (0x14D)"
+        );
+        assert_eq!(
+            format_limit(Some("10"), IntervalType::Open, LimitSide::Upper),
+            "< 10 (0xA)"
+        );
+        assert_eq!(
+            format_limit(Some("-5"), IntervalType::Closed, LimitSide::Upper),
+            "\u{2264} -5 (-0x5)"
+        );
+        assert_eq!(
+            format_limit(Some("1.5"), IntervalType::Closed, LimitSide::Lower),
+            "\u{2265} 1.5"
+        );
+        assert_eq!(
+            format_limit(None, IntervalType::Infinite, LimitSide::Upper),
+            "+\u{221e}"
+        );
     }
 }
